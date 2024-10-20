@@ -1,17 +1,19 @@
 #include "snake.h"
 
-void ajouterCorps(Position *tete, int x, int y)
+void ajouterCorps(Position **tete, int x, int y)
 {
-    Position *nouveau;
+    Position *nouveau = (Position*)malloc(sizeof(Position));
     nouveau->x = x;
     nouveau->y = y;
-    nouveau->next = tete;
-    tete = nouveau;
+    nouveau->next = *tete;
+    *tete = nouveau;
 }
 
-void enleverCorps(Position *tete)
+void enleverCorps(Position **tete)
 {
-    Position *temp = tete;
-    tete = tete->next;
+    if (*tete == NULL) return;
+
+    Position *temp = *tete;
+    *tete = (*tete)->next;
     free(temp);
 }

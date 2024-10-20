@@ -88,6 +88,21 @@ int initSDL()
         return 1;
     }
 
+    SDL_Surface* pomme = IMG_Load("pomme.png");
+    if (pomme == NULL) 
+    {
+        printf("Error loading image %s\n", IMG_GetError());
+        return 1;
+    }
+
+    texturePomme = SDL_CreateTextureFromSurface(renderer, pomme);
+    if (texturePomme == NULL) 
+    {
+        printf("Error creating texture\n");
+        return 1;
+    }
+    SDL_FreeSurface(pomme);
+
 
     SDL_Rect rect;
     for (int i = 0; i < 320; i += 32) {
