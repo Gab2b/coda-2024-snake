@@ -5,8 +5,8 @@ SDL_Renderer* renderer = NULL;
 SDL_Texture* textureBuissons = NULL;
 SDL_Texture* textureHerbe = NULL;
 SDL_Texture* textureSnake = NULL;
-SDL_Rect display = {128, 128, 32, 32};
 SDL_Rect image = {0, 0, 16, 16};
+SDL_Rect image2 = {16, 0, 16, 16};
 
 void cleanupSDL()
 {
@@ -32,7 +32,7 @@ int initSDL()
         return 1;
     }
 
-    window = SDL_CreateWindow("Snake", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 320, 320, SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("Turbo Snake", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 320, 320, SDL_WINDOW_OPENGL);
     if (window == NULL)
     {
         printf("Error Window Creation\n");
@@ -122,8 +122,6 @@ int initSDL()
             SDL_RenderCopy(renderer, textureHerbe, NULL, &rect);
         }
     }
-
-    SDL_RenderCopy(renderer, textureSnake, &display, &image);
 
     SDL_RenderPresent(renderer);
 }

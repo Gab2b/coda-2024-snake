@@ -3,11 +3,34 @@
 SDL_Texture* texturePomme;
 SDL_Rect pomme;
 
-void genererPomme(SDL_Rect* rect) {
-    rect->x = (rand() % 9) * 32 + 32;
-    rect->y = (rand() % 9) * 32 + 32;
-    rect->w = 32;
-    rect->h = 32;
+void genererPomme(SDL_Rect* rect, Position* snake, int game)
+{
+    int collision;
+    do {
+        collision = 0;
+        rect->x = (rand() % 8) * 32 + 32;
+        rect->y = (rand() % 8) * 32 + 32;
+        rect->w = 32;
+        rect->h = 32;
+
+        Position* current = snake;
+        int i = 1;
+        while (current != NULL) {
+            if (current->rect.x == rect->x && current->rect.y == rect->y)
+            {
+                collision = 1;
+                break;
+            }
+            current = current->next;
+            i++;
+        }
+
+        if (i == 63)
+        {
+            collision = 1;
+            game = -1;
+        }
+    } while (collision);
 }
 
 int collision(SDL_Rect* a, SDL_Rect* b) {
@@ -18,29 +41,37 @@ int bordureCollision(SDL_Rect* rect) {
     return (rect->x < 32 || rect->x >= 288 || rect->y < 32 || rect->y >= 288);
 }
 
-void play() {
+int corpsCollision(Position* snake) {
+    SDL_Rect* headRect = &snake->rect;
+    Position* current = snake->next; 
+    while (current != NULL) {
+        if (collision(headRect, &current->rect)) {
+            return 1; 
+        }
+        current = current->next;
+    }
+    return 0; 
+}
+
+int play() {
     SDL_Event e;
     image.x = 0;
     int direction = SDL_SCANCODE_D;
     int game = 1;
+    int delay = 450;
 
-    int oldy = 0;
-    int oldx = 0;
-
-    // Initialiser la liste chaînée avec la tête du serpent
     Position* snake = NULL;
-    ajouterCorps(&snake, display.x, display.y);
+    ajouterCorps(&snake, 128, 128, renderer, "snake.png");
 
-    // Initialiser la génération aléatoire
     srand(time(NULL));
-    genererPomme(&pomme);
+    genererPomme(&pomme, snake, game);
 
-    // Dessiner la tête du serpent et la pomme à la position initiale
+    SDL_RenderCopy(renderer, snake->texture, &image, &snake->rect);
     SDL_RenderCopy(renderer, texturePomme, NULL, &pomme);
-    SDL_RenderCopy(renderer, textureSnake, &image, &display);
     SDL_RenderPresent(renderer);
 
-    while (game) {
+    while (game == 1)
+    {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) {
                 game = 0;
@@ -64,67 +95,85 @@ void play() {
             }
         }
 
-        SDL_Rect oldDisplay = display;
+        SDL_Rect oldHeadRect = snake->rect;
 
-        // Mettre à jour la position de la tête du serpent en fonction de la direction actuelle
-        switch (direction) {
-            case SDL_SCANCODE_W:
-                oldy = display.y;
-                display.y -= 32;
-                break;
-            case SDL_SCANCODE_D:
-                oldx = display.x;
-                display.x += 32;
-                break;
-            case SDL_SCANCODE_S:
-                oldy = display.y;
-                display.y += 32;
-                break;
-            case SDL_SCANCODE_A:
-                oldx = display.x;
-                display.x -= 32;
-                break;
-        }
-
-        // Vérifier la collision avec les bords
-        if (bordureCollision(&display)) {
-            game = 0; // Terminer le jeu si le serpent touche les bords
-            continue;
-        }
-
-        // Vérifier la collision avec la pomme
-        if (collision(&display, &pomme)) {
-            // Ajouter un nouveau segment au corps du serpent
-            ajouterCorps(&snake, oldx, oldy);
-            // Générer une nouvelle position pour la pomme
-            genererPomme(&pomme);
-        } else {
-            // Supprimer le dernier segment du serpent pour simuler le mouvement
-            enleverCorps(&snake);
-        }
-
-        // Effacer l'ancienne position de la tête du serpent
-        SDL_RenderCopy(renderer, textureHerbe, NULL, &oldDisplay);
-
-        // Dessiner le corps du serpent
         Position* current = snake;
         while (current != NULL) {
-            SDL_Rect segmentRect = {current->x, current->y, 32, 32};
-            SDL_RenderCopy(renderer, textureSnake, &image, &segmentRect);
+            SDL_RenderCopy(renderer, textureHerbe, NULL, &current->rect);
             current = current->next;
         }
 
-        // Dessiner la pomme
+        current = snake;
+        SDL_Rect prevRect = current->rect;
+        while (current->next != NULL) {
+            SDL_Rect tempRect = current->next->rect;
+            current->next->rect = prevRect;
+            prevRect = tempRect;
+            current = current->next;
+        }
+
+        switch (direction) {
+            case SDL_SCANCODE_W:
+                snake->rect.y -= 32;
+                break;
+            case SDL_SCANCODE_D:
+                snake->rect.x += 32;
+                break;
+            case SDL_SCANCODE_S:
+                snake->rect.y += 32;
+                break;
+            case SDL_SCANCODE_A:
+                snake->rect.x -= 32;
+                break;
+        }
+
+        if (bordureCollision(&snake->rect))
+        {
+            game = 0; 
+            continue;
+        }
+        if (corpsCollision(snake)) {
+            game = 0; 
+            continue;
+        }
+        if (collision(&snake->rect, &pomme))
+        {
+            Position* last = snake;
+            while (last->next != NULL) {
+                last = last->next;
+            }
+            ajouterCorps(&last, prevRect.x, prevRect.y, renderer, "snake.png");
+            genererPomme(&pomme, snake, game);
+            delay -= 7;
+        }
+
+        SDL_RenderCopy(renderer, textureHerbe, NULL, &oldHeadRect);
+
+        current = snake;
+        while (current != NULL)
+        {
+            if (current == snake)
+            {
+                SDL_RenderCopy(renderer, current->texture, &image, &current->rect);
+            }
+            else
+            {
+                SDL_RenderCopy(renderer, current->texture, &image2, &current->rect);
+            }
+            current = current->next;
+        }
+
+
         SDL_RenderCopy(renderer, texturePomme, NULL, &pomme);
-        SDL_RenderCopy(renderer, textureSnake, &image, &display);
         SDL_RenderPresent(renderer);
 
-        // Délai pour contrôler la vitesse du serpent
-        SDL_Delay(300); // Ajuster le délai selon les besoins
+        SDL_Delay(delay); 
     }
 
-    // Libérer la mémoire du corps du serpent
-    while (snake != NULL) {
+    while (snake != NULL)
+    {
         enleverCorps(&snake);
     }
+
+    return game;
 }

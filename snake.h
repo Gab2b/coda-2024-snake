@@ -16,22 +16,24 @@ extern SDL_Texture* textureBuissons;
 extern SDL_Texture* textureHerbe;
 extern SDL_Texture* textureSnake;
 extern SDL_Texture* texturePomme;
-extern SDL_Rect display;
 extern SDL_Rect image;
+extern SDL_Rect image2;
 
 typedef struct corps {
-    int x;
-    int y;
+    SDL_Rect rect;
+    SDL_Texture* texture;
     struct corps* next; 
 } Position;
 
-void play();
+int play();
 int initSDL();
 void cleanupSDL();
-void ajouterCorps(Position **tete, int x, int y);
+void ajouterCorps(Position **tete, int x, int y, SDL_Renderer* renderer, const char* texturePath);
 void enleverCorps(Position **tete);
-void genererPomme(SDL_Rect* rect);
+void genererPomme(SDL_Rect* rect, Position* snake, int game);
 int collision(SDL_Rect* a, SDL_Rect* b);
 int bordureCollision(SDL_Rect* rect);
+void defaite();
+void victoire();
 
-#endif 
+#endif
